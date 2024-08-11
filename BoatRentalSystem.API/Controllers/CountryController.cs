@@ -1,50 +1,74 @@
-﻿namespace BoatRentalSystem.API.Controllers
+﻿namespace BoatRentalSystem.API.Controllers;
+
+using AutoMapper;
+using BoatRentalSystem.API.ViewModel;
+using BoatRentalSystem.Application;
+using BoatRentalSystem.Core.Entities;
+using Microsoft.AspNetCore.Mvc;
+
+[Route("api/[controller]")]
+[ApiController]
+public class CountryController : ControllerBase
 {
-    using BoatRentalSystem.Application;
-    using BoatRentalSystem.Core.Entities;
-    using Microsoft.AspNetCore.Http;
-    using Microsoft.AspNetCore.Mvc;
+    private readonly CountryService _CountryService;
+    private readonly IMapper _mapper;
 
-    [Route("api/[controller]")]
-    [ApiController]
-
-    public class CountryController : Controller
+    public CountryController(CountryService CountryService, IMapper mapper)
     {
-        private readonly CountryService _countryService;
+        _CountryService = CountryService;
+        _mapper = mapper;
+    }
 
-        public CountryController(CountryService countryService)
-        {
-            _countryService = countryService;
-        }
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<CountryViewModel>>> Get()
+    {
+        var Country = await _CountryService.GetAllCountries();
+        var CountryViewModel = _mapper.Map<IEnumerable<CountryViewModel>>(Country);
+        return Ok(CountryViewModel);
+    }
 
-        [HttpGet]
-        public Task<IEnumerable<Country>> Get()
+    [HttpGet("{id}")]
+    public async Task<ActionResult<CountryViewModel>> Get(int id)
+    {
+        var Country = await _CountryService.GetCountryById(id);
+        if (Country == null)
         {
-            return _countryService.GetAllCountries();
+            return NotFound();
         }
+        var CountryViewModel = _mapper.Map<CountryViewModel>(Country);
+        return Ok(CountryViewModel);
+    }
 
-        [HttpGet("{id}")]
-        public Task<Country> Get(int id)
-        {
-            return _countryService.GetCountryById(id);
-        }
+    [HttpPost]
+    public async Task<ActionResult> Post([FromBody] AddCountryViewModel addCountryViewModel)
+    {
+        var Country = _mapper.Map<Country>(addCountryViewModel);
+        await _CountryService.AddCountry(Country);
+        return CreatedAtAction(nameof(Get), new { id = Country.Id }, addCountryViewModel);
+    }
 
-        [HttpPost]
-        public Task Post(Country country)
+    [HttpPut]
+    public async Task<ActionResult> Put(CountryViewModel CountryViewModel)
+    {
+        var existingCountry = await _CountryService.GetCountryById(CountryViewModel.Id);
+        if (existingCountry == null)
         {
-            return _countryService.AddCountry(country);
+            return NotFound();
         }
+        var Country = _mapper.Map<Country>(CountryViewModel);
+        await _CountryService.UpdateCountry(Country);
+        return Ok(Country);
 
-        [HttpPut]
-        public Task Put(Country country)
+    }
+    [HttpDelete]
+    public async Task<ActionResult> Delete(int id)
+    {
+        var existingCountry = await _CountryService.GetCountryById(id);
+        if (existingCountry == null)
         {
-            return _countryService.UpdateCountry(country);
-
+            return NotFound();
         }
-        [HttpDelete]
-        public Task Delete(int id)
-        {
-            return _countryService.DeleteCountry(id);
-        }
+        await _CountryService.DeleteCountry(id);
+        return NoContent();
     }
 }

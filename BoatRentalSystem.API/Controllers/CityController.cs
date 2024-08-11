@@ -1,49 +1,73 @@
-﻿namespace BoatRentalSystem.API.Controllers
+﻿namespace BoatRentalSystem.API.Controllers;
+using AutoMapper;
+using BoatRentalSystem.API.ViewModel;
+using BoatRentalSystem.Application;
+using BoatRentalSystem.Core.Entities;
+using Microsoft.AspNetCore.Mvc;
+
+[Route("api/[controller]")]
+[ApiController]
+public class CityController : ControllerBase
 {
-    using BoatRentalSystem.Application;
-    using BoatRentalSystem.Core.Entities;
-    using Microsoft.AspNetCore.Http;
-    using Microsoft.AspNetCore.Mvc;
+    private readonly CityService _cityService;
+    private readonly IMapper _mapper;
 
-    [Route("api/[controller]")]
-    [ApiController]
-    public class CityController : ControllerBase
+    public CityController(CityService cityService, IMapper mapper)
     {
-        private readonly CityService _cityService;
+        _cityService = cityService;
+        _mapper = mapper;
+    }
 
-        public CityController(CityService cityService)
-        {
-            _cityService = cityService;
-        }
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<CityViewModel>>> Get()
+    {
+        var city = await _cityService.GetAllCities();
+        var cityViewModel = _mapper.Map<IEnumerable<CityViewModel>>(city);
+        return Ok(cityViewModel);
+    }
 
-        [HttpGet]
-        public Task<IEnumerable<City>> Get()
+    [HttpGet("{id}")]
+    public async Task<ActionResult<CityViewModel>> Get(int id)
+    {
+        var city = await _cityService.GetCityById(id);
+        if (city == null)
         {
-            return _cityService.GetAllCities();
+            return NotFound();
         }
+        var cityViewModel = _mapper.Map<CityViewModel>(city);
+        return Ok(cityViewModel);
+    }
 
-        [HttpGet("{id}")]
-        public Task<City> Get(int id)
-        {
-            return _cityService.GetCityById(id);
-        }
+    [HttpPost]
+    public async Task<ActionResult> Post([FromBody] AddCityViewModel addCityViewModel)
+    {
+        var city = _mapper.Map<City>(addCityViewModel);
+        await _cityService.AddCity(city);
+        return CreatedAtAction(nameof(Get), new { id = city.Id }, addCityViewModel);
+    }
 
-        [HttpPost]
-        public Task Post(City city)
+    [HttpPut]
+    public async Task<ActionResult> Put(CityViewModel cityViewModel)
+    {
+        var existingCity = await _cityService.GetCityById(cityViewModel.Id);
+        if (existingCity == null)
         {
-            return _cityService.AddCity(city);
+            return NotFound();
         }
+        var city = _mapper.Map<City>(cityViewModel);
+        await _cityService.UpdateCity(city);
+        return Ok(city);
 
-        [HttpPut]
-        public Task Put(City city)
+    }
+    [HttpDelete]
+    public async Task<ActionResult> Delete(int id)
+    {
+        var existingCity = await _cityService.GetCityById(id);
+        if (existingCity == null)
         {
-            return _cityService.UpdateCity(city);
-
+            return NotFound();
         }
-        [HttpDelete]
-        public Task Delete(int id)
-        {
-            return _cityService.DeleteCity(id);
-        }
+        await _cityService.DeleteCity(id);
+        return NoContent();
     }
 }

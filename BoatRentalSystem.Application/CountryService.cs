@@ -5,34 +5,35 @@ namespace BoatRentalSystem.Application;
 
 public class CountryService
 {
-    private readonly ICountryRepository _countryRepository;
+    private readonly ICountryRepository _CountryRepository;
 
-    public CountryService(ICountryRepository countryRepository)
+    public CountryService(ICountryRepository CountryRepository)
     {
-        _countryRepository = countryRepository;
+        _CountryRepository = CountryRepository;
     }
 
     public Task<IEnumerable<Country>> GetAllCountries()
     {
-        return _countryRepository.GetAllCountries();
+        return _CountryRepository.GetAllAsync();
     }
     public Task<Country> GetCountryById(int id)
     {
-        return _countryRepository.GetCountryById(id);
+        return _CountryRepository.GetByIdAsync(id);
 
     }
-    public Task AddCountry(Country country)
+    public Task AddCountry(Country Country)
     {
-        return _countryRepository.AddCountry(country);
+        return _CountryRepository.AddAsync(Country);
     }
 
-    public Task UpdateCountry(Country country)
+    public Task UpdateCountry(Country Country)
     {
-        return _countryRepository.UpdateCountry(country);
+        return _CountryRepository.UpdateAsync(Country.Id, Country);
     }
 
     public Task DeleteCountry(int id)
     {
-        return _countryRepository.DeleteCountry(id);
+        return _CountryRepository.DeleteAsync(id);
     }
+
 }

@@ -1,50 +1,74 @@
-﻿namespace BoatRentalSystem.API.Controllers
+﻿namespace BoatRentalSystem.API.Controllers;
+
+using AutoMapper;
+using BoatRentalSystem.API.ViewModel;
+using BoatRentalSystem.Application;
+using BoatRentalSystem.Core.Entities;
+using Microsoft.AspNetCore.Mvc;
+
+[Route("api/[controller]")]
+[ApiController]
+public class AdditionController : ControllerBase
 {
-    using BoatRentalSystem.Application;
-    using BoatRentalSystem.Core.Entities;
-    using Microsoft.AspNetCore.Http;
-    using Microsoft.AspNetCore.Mvc;
+    private readonly AdditionService _additionService;
+    private readonly IMapper _mapper;
 
-    [Route("api/[controller]")]
-    [ApiController]
-
-    public class AdditionController : Controller
+    public AdditionController(AdditionService additionService, IMapper mapper)
     {
-        private readonly AdditionService _additionService;
+        _additionService = additionService;
+        _mapper = mapper;
+    }
 
-        public AdditionController(AdditionService additionService)
-        {
-            _additionService = additionService;
-        }
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<AdditionViewModel>>> Get()
+    {
+        var Addition = await _additionService.GetAllAdditions();
+        var AdditionViewModel = _mapper.Map<IEnumerable<AdditionViewModel>>(Addition);
+        return Ok(AdditionViewModel);
+    }
 
-        [HttpGet]
-        public Task<IEnumerable<Addition>> Get()
+    [HttpGet("{id}")]
+    public async Task<ActionResult<AdditionViewModel>> Get(int id)
+    {
+        var Addition = await _additionService.GetAdditionById(id);
+        if (Addition == null)
         {
-            return _additionService.GetAllAdditions();
+            return NotFound();
         }
+        var AdditionViewModel = _mapper.Map<AdditionViewModel>(Addition);
+        return Ok(AdditionViewModel);
+    }
 
-        [HttpGet("{id}")]
-        public Task<Addition> Get(int id)
-        {
-            return _additionService.GetAdditionById(id);
-        }
+    [HttpPost]
+    public async Task<ActionResult> Post([FromBody] AddAdditionViewModel addAdditionViewModel)
+    {
+        var Addition = _mapper.Map<Addition>(addAdditionViewModel);
+        await _additionService.AddAddition(Addition);
+        return CreatedAtAction(nameof(Get), new { id = Addition.Id }, addAdditionViewModel);
+    }
 
-        [HttpPost]
-        public Task Post(Addition addition)
+    [HttpPut]
+    public async Task<ActionResult> Put(AdditionViewModel AdditionViewModel)
+    {
+        var existingAddition = await _additionService.GetAdditionById(AdditionViewModel.Id);
+        if (existingAddition == null)
         {
-            return _additionService.AddAddition(addition);
+            return NotFound();
         }
+        var Addition = _mapper.Map<Addition>(AdditionViewModel);
+        await _additionService.UpdateAddition(Addition);
+        return Ok(Addition);
 
-        [HttpPut]
-        public Task Put(Addition addition)
+    }
+    [HttpDelete]
+    public async Task<ActionResult> Delete(int id)
+    {
+        var existingAddition = await _additionService.GetAdditionById(id);
+        if (existingAddition == null)
         {
-            return _additionService.UpdateAddition(addition);
-
+            return NotFound();
         }
-        [HttpDelete]
-        public Task Delete(int id)
-        {
-            return _additionService.DeleteAddition(id);
-        }
+        await _additionService.DeleteAddition(id);
+        return NoContent();
     }
 }

@@ -1,50 +1,74 @@
-﻿namespace BoatRentalSystem.API.Controllers
+﻿namespace BoatRentalSystem.API.Controllers;
+
+using AutoMapper;
+using BoatRentalSystem.API.ViewModel;
+using BoatRentalSystem.Application;
+using BoatRentalSystem.Core.Entities;
+using Microsoft.AspNetCore.Mvc;
+
+[Route("api/[controller]")]
+[ApiController]
+public class PackageController : ControllerBase
 {
-    using BoatRentalSystem.Application;
-    using BoatRentalSystem.Core.Entities;
-    using Microsoft.AspNetCore.Http;
-    using Microsoft.AspNetCore.Mvc;
+    private readonly PackageService _packageService;
+    private readonly IMapper _mapper;
 
-    [Route("api/[controller]")]
-    [ApiController]
-
-    public class PackageController : Controller
+    public PackageController(PackageService packageService, IMapper mapper)
     {
-        private readonly PackageService _packageService;
+        _packageService = packageService;
+        _mapper = mapper;
+    }
 
-        public PackageController(PackageService packageService)
-        {
-            _packageService = packageService;
-        }
-        //test
-        [HttpGet]
-        public Task<IEnumerable<Package>> Get()
-        {
-            return _packageService.GetAllPackages();
-        }
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<PackageViewModel>>> Get()
+    {
+        var Package = await _packageService.GetAllPackages();
+        var PackageViewModel = _mapper.Map<IEnumerable<PackageViewModel>>(Package);
+        return Ok(PackageViewModel);
+    }
 
-        [HttpGet("{id}")]
-        public Task<Package> Get(int id)
+    [HttpGet("{id}")]
+    public async Task<ActionResult<PackageViewModel>> Get(int id)
+    {
+        var Package = await _packageService.GetPackageById(id);
+        if (Package == null)
         {
-            return _packageService.GetPackageById(id);
+            return NotFound();
         }
+        var PackageViewModel = _mapper.Map<PackageViewModel>(Package);
+        return Ok(PackageViewModel);
+    }
 
-        [HttpPost]
-        public Task Post(Package package)
-        {
-            return _packageService.AddPackage(package);
-        }
+    [HttpPost]
+    public async Task<ActionResult> Post([FromBody] AddPackageViewModel addPackageViewModel)
+    {
+        var Package = _mapper.Map<Package>(addPackageViewModel);
+        await _packageService.AddPackage(Package);
+        return CreatedAtAction(nameof(Get), new { id = Package.Id }, addPackageViewModel);
+    }
 
-        [HttpPut]
-        public Task Put(Package package)
+    [HttpPut]
+    public async Task<ActionResult> Put(PackageViewModel PackageViewModel)
+    {
+        var existingPackage = await _packageService.GetPackageById(PackageViewModel.Id);
+        if (existingPackage == null)
         {
-            return _packageService.UpdatePackage(package);
+            return NotFound();
+        }
+        var Package = _mapper.Map<Package>(PackageViewModel);
+        await _packageService.UpdatePackage(Package);
+        return Ok(Package);
 
-        }
-        [HttpDelete]
-        public Task Delete(int id)
+    }
+    [HttpDelete]
+    public async Task<ActionResult> Delete(int id)
+    {
+        var existingPackage = await _packageService.GetPackageById(id);
+        if (existingPackage == null)
         {
-            return _packageService.DeletePackage(id);
+            return NotFound();
         }
+        await _packageService.DeletePackage(id);
+        return NoContent();
     }
 }
