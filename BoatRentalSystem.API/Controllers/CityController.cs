@@ -11,11 +11,14 @@ public class CityController : ControllerBase
 {
     private readonly CityService _cityService;
     private readonly IMapper _mapper;
+    private readonly ILogger<CityController> _logger;
 
-    public CityController(CityService cityService, IMapper mapper)
+
+    public CityController(CityService cityService, IMapper mapper, ILogger<CityController> logger)
     {
         _cityService = cityService;
         _mapper = mapper;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -30,8 +33,10 @@ public class CityController : ControllerBase
     public async Task<ActionResult<CityViewModel>> Get(int id)
     {
         var city = await _cityService.GetCityById(id);
+        _logger.LogInformation($"Get City By id = {id}");
         if (city == null)
         {
+            _logger.LogError($"City with id : {id} not found");
             return NotFound();
         }
         var cityViewModel = _mapper.Map<CityViewModel>(city);

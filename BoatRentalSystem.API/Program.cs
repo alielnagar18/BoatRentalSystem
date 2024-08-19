@@ -3,6 +3,8 @@ using BoatRentalSystem.Application;
 using BoatRentalSystem.Core.Interfaces;
 using BoatRentalSystem.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,13 +27,25 @@ builder.Services.AddScoped<PackageService>();
 builder.Services.AddScoped<IAdditionRepository, AdditionRepository>();
 builder.Services.AddScoped<AdditionService>();
 
+//Automapper Configration
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 
+//Dataabase Configration
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
 b => b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
 
+//Serilog Configuration
+var configuration = new ConfigurationBuilder()
+       .SetBasePath(Directory.GetCurrentDirectory())
+       .AddJsonFile("appsettings.json")
+       .Build();
 
+Log.Logger = new LoggerConfiguration()
+.ReadFrom.Configuration(configuration)
+.CreateLogger();
+
+builder.Host.UseSerilog();
 
 
 var app = builder.Build();
